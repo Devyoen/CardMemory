@@ -22,16 +22,33 @@ public class InGameManager : MonoSington<InGameManager>
 
     private void Start()
     {
-        Vector3 middlePoint = new Vector3(-((StageSize.x - 1) * CardIntervalX * 0.5f), -((StageSize.y - 1) * CardIntervalY * 0.5f), 0);
-        Debug.Log(middlePoint);
+        SetCards();
+    }
+
+    private void SetCards()
+    {
+        Vector3 centerPoint = new Vector3(-((StageSize.x - 1) * CardIntervalX * 0.5f), -((StageSize.y - 1) * CardIntervalY * 0.5f), 0);
+
+        int cardCount = StageSize.x * StageSize.y;
+        List<CardType> cardTypes = CardType.GetRandomCardTypeList(cardCount);
+        int count = 0;
         for (int y = 0; y < StageSize.y; y++)
         {
             for (int x = 0; x < StageSize.x; x++)
             {
-                Card card = Instantiate(cardPrefab, middlePoint + new Vector3(x * CardIntervalX, y * CardIntervalY, 0), Quaternion.identity);
-                card.SetCard(Suit.Spade, Number.Ace);
-                flipAll += card.Flip;
+                Vector3 cardPos = centerPoint + new Vector3(x * CardIntervalX, y * CardIntervalY, 0);
+                CardType cardType = cardTypes[count];
+
+                CreateCard(cardPos, cardType);
+                count++;
             }
         }
+    }
+
+    private void CreateCard(Vector3 pos, CardType cardType)
+    {
+        Card card = Instantiate(cardPrefab, pos, Quaternion.identity);
+        card.SetCard(cardType);
+        flipAll += card.Flip;
     }
 }
