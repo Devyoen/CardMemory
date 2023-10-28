@@ -15,13 +15,30 @@ public class PlayerInputController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && InGameManager.instance.PlayerState == PlayerState.canAct)
         {
             RaycastHit hit = PonterCast();
-            if (hit.transform != null && hit.transform.TryGetComponent(out Card card))
+            if (CanFlip(hit, out Card card))
             {
                 card.Flip();
+                InGameManager.instance.SelectCard(card);
             }
         }
+    }
+
+    private bool CanFlip(RaycastHit hit, out Card _card)
+    {
+        bool value;
+        if (hit.transform != null)
+        {
+            value = hit.transform.TryGetComponent(out Card card) && card.CanInteraction;
+            _card = card;
+        }
+        else
+        {
+            value = false;
+            _card = null;
+        }
+        return value;
     }
 }

@@ -87,10 +87,12 @@ public class Card : MonoBehaviour
 
     private CardType cardType;
     private CardDirection cardDirection;
+    private Vector3 originPos;
     private bool canInteraction = true;
 
     public CardType CardType => cardType;
     public CardDirection CardDirection => cardDirection;
+    public Vector3 OriginPos => originPos;
     public bool CanInteraction => canInteraction;
 
     private Coroutine MoveTo_corutine;
@@ -110,6 +112,12 @@ public class Card : MonoBehaviour
         animator.SetBool("IsFrontSide", true);
     }
 
+    public void SetPosition(Vector3 pos)
+    {
+        transform.position = pos;
+        originPos = pos;
+    }
+
     public void Flip()
     {
         Flip(CardDirection == CardDirection.Front ? CardDirection.Back : CardDirection.Front);
@@ -117,13 +125,13 @@ public class Card : MonoBehaviour
 
     public void Flip(CardDirection direction)
     {
-        if (!CanFlip())
+        if (!CanInteraction)
             return;
         cardDirection = direction;
         animator.SetBool("IsFrontSide", direction == CardDirection.Front ? true : false);
     }
 
-    public void MoveTo(Vector3 pos, float time = 0.5f)
+    public void MoveTo(Vector3 pos, float time = 0.3f)
     {
         if (MoveTo_corutine != null)
             StopCoroutine(MoveTo_corutine);
@@ -133,13 +141,11 @@ public class Card : MonoBehaviour
     private IEnumerator MoveTo_co(Vector3 pos, float time)
     {
         Vector3 originPos = transform.position;
-        for (float i = 0; i <= time; i += Time.deltaTime)
+        for (float i = 0; i <= 1; i += Time.deltaTime / time)
         {
             transform.position = Vector3.Lerp(originPos, pos, i);
             yield return null;
         }
         transform.position = pos;
     }
-
-    public bool CanFlip() => InGameManager.instance.CanFlip && CanInteraction;
 }
