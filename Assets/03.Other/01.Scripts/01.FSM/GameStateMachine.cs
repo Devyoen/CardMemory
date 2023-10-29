@@ -4,10 +4,12 @@ using UnityEngine;
 
 public enum GameState
 {
-    StartState,
+    GameStartState,
+    StageStartState,
     SelectCardState,
     JudgmentState,
-    EndState
+    StageEndState,
+    GameEndState
 }
 
 public class GameStateMachine
@@ -26,11 +28,15 @@ public class GameStateMachine
     {
         if (!states.ContainsKey(key))
         {
+            Debug.Log("create");
             IState _state = null;
             switch (key)
             {
-                case GameState.StartState:
-                    _state = new StartState();
+                case GameState.GameStartState:
+                    _state = new GameStartState();
+                    break;
+                case GameState.StageStartState:
+                    _state = new StageStartState();
                     break;
                 case GameState.SelectCardState:
                     _state = new SelectCardState();
@@ -38,11 +44,14 @@ public class GameStateMachine
                 case GameState.JudgmentState:
                     _state = new JudgmentState();
                     break;
-                case GameState.EndState:
-                    _state = new EndState();
+                case GameState.StageEndState:
+                    _state = new StageEndState();
+                    break;
+                case GameState.GameEndState:
+                    _state = new GameEndState();
                     break;
                 default:
-                    Debug.Log("¿¡·¯ : ÇÒ´çµÇÁö ¾ÊÀº IState");
+                    Debug.Log("ï¿½ï¿½ï¿½ï¿½ : ï¿½Ò´ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ IState");
                     break;
             }
             states.Add(key, _state);
