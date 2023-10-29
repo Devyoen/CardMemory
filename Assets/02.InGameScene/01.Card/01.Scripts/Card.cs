@@ -105,9 +105,9 @@ public class Card : MonoBehaviour
     public void SetCard(CardType cardType)
     {
         this.cardType = cardType;
-        List<Sprite> cardImageList = InGameManager.instance.CardImageContainer.GetSpriteList(cardType.Suit);
+        List<Sprite> cardImageList = CardManager.instance.CardImageContainer.GetSpriteList(cardType.Suit);
         frontImage.sprite = cardImageList[(int)cardType.Number];
-        backImage.sprite = InGameManager.instance.CardImageContainer.BackImageSprite;
+        backImage.sprite = CardManager.instance.CardImageContainer.BackImageSprite;
         cardDirection = CardDirection.Front;
         animator.SetBool("IsFrontSide", true);
     }
@@ -125,8 +125,6 @@ public class Card : MonoBehaviour
 
     public void Flip(CardDirection direction)
     {
-        if (!CanInteraction)
-            return;
         cardDirection = direction;
         animator.SetBool("IsFrontSide", direction == CardDirection.Front ? true : false);
     }

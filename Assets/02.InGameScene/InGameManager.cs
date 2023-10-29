@@ -12,40 +12,33 @@ public enum PlayerState
 public class InGameManager : MonoSington<InGameManager>
 {
     #region Values
-    [Header ("Commons")]
-    [SerializeField] private Card cardPrefab;
-    [SerializeField] private CardImageContainer cardImageContainer;
-    public CardImageContainer CardImageContainer => cardImageContainer;
-
     [Header ("GameSetting")]
     [SerializeField] private Vector2Int stageSize = new Vector2Int();
+
     public Vector2Int StageSize => stageSize;
 
     [Space (10f)]
     [SerializeField] private float cardIntervalX = 1f;
     [SerializeField] private float cardIntervalY = 1f;
+
     public float CardIntervalX => cardIntervalX;
     public float CardIntervalY => cardIntervalY;
-
-    [Space (10f)]
-    [SerializeField] private Vector3 cardsMixedPos;
 
     [Header("Info")]
     [SerializeField] private int score = 0;
     [SerializeField] private float timer = 0;
+
     public int Score => score;
     public float Timer => timer;
 
     //상태 변수들
     [Header ("StateValues")]
+    private GameStateMachine stateMachine;
     private PlayerState playerState;
+
+    public GameStateMachine StateMachine => stateMachine;
     public PlayerState PlayerState => playerState;
 
-    //기타
-    private Card[] cards;
-    [SerializeField] private Stack<Card> selectedCards = new Stack<Card>();
-    private Action<CardDirection> flipAll;
-    private List<CardType> curCardsType = new List<CardType>();
     #endregion
 
     #region SetValueMethods
@@ -62,155 +55,168 @@ public class InGameManager : MonoSington<InGameManager>
 
     private void Start()
     {
-        StartCoroutine(GamePlayControl_co());
+        stateMachine = new GameStateMachine();
+        StateMachine.ChangeState(GameState.StartState);
     }
 
-    private IEnumerator GamePlayControl_co()
+    public bool CanSelectCard() => InGameManager.instance.PlayerState == PlayerState.canAct;
+}
+
+public class StartState : IState
+{
+    private Vector3 cardsMixedPos;
+    private List<CardType> curCardsType = new List<CardType>();
+    private InGameManager inGameManager;
+    private CardManager cardManager;
+
+    public void Enter()
     {
-        yield return SetGame_co();
-        yield return StartGame_co();
+        Init();
+        inGameManager.SetPlayerState(PlayerState.canNotAct);
+        inGameManager.StartCoroutine(SetGame_co());
+        Debug.Log("StartState");
+    }
+
+    public void Update()
+    {
+
+    }
+
+    public void Exit()
+    {
+        
+    }
+
+    private void Init()
+    {
+        inGameManager = InGameManager.instance;
+        cardManager = CardManager.instance;
     }
 
     private IEnumerator SetGame_co()
     {
-        SetPlayerState(PlayerState.canNotAct);
-        SetCards();
+        cardManager.SetCards();
         yield return YieldCache.WaitForSeconds(2f);
-        FlipAllCards(CardDirection.Back);
+        cardManager.FlipAllCards(CardDirection.Back);
         yield return YieldCache.WaitForSeconds(1f);
-        MoveAllCards(cardsMixedPos);
-        ShuffleCards();
-        PositionCards(cards);
+        cardManager.MoveAllCards(cardsMixedPos);
+        cardManager.ShuffleCards();
+        cardManager.PositionCards();
         yield return YieldCache.WaitForSeconds(2f);
-        yield return MoveAllCardsToOrigin_co();
+        yield return cardManager.MoveAllCardsToOrigin_co();
         yield return YieldCache.WaitForSeconds(0.5f);
+        EndStartState();
     }
 
-    private void SetCards()
+    private void EndStartState()
     {
-        int cardCount = StageSize.x * StageSize.y;
-        cards = new Card[cardCount];
-        curCardsType = CardType.GetRandomCardTypeList(cardCount); //생성할 카드들의 타입을 랜덤하게 정함
-        for (int i = 0; i < cardCount; i++)
-        {
-            cards[i] = CreateCard(curCardsType[i]);
-        }
-        PositionCards(cards);
+        inGameManager.StateMachine.ChangeState(GameState.SelectCardState);
     }
 
-    private IEnumerator MoveAllCardsToOrigin_co()
+}
+
+public class SelectCardState : IState
+{
+    private InGameManager inGameManager;
+    private CardManager cardManager;
+
+    public void Enter()
     {
-        foreach (Card card in cards)
-        {
-            card.MoveTo(card.OriginPos);
-            yield return YieldCache.WaitForSeconds(0.3f);
-        }
+        Init();
+        inGameManager.SetPlayerState(PlayerState.canAct);
+        cardManager.ResetSelectedCards();
+        cardManager.onAllSelected += OnAllCardsSelected;
+        Debug.Log("SelectState");
     }
 
-    private IEnumerator StartGame_co()
+    public void Update()
     {
-        SetPlayerState(PlayerState.canAct);
-        while (true)
-        {
-            yield return SelectCard_co();
-            yield return CheakCardMatching_co();
-        }
+
     }
 
-    private IEnumerator SelectCard_co()
+    public void Exit()
     {
-        selectedCards.Clear();
-        SetPlayerState(PlayerState.canAct);
-        while (selectedCards.Count < 2)
-        {
-            yield return null;
-        }
+
     }
 
-    private void EndCardSelect()
+    private void Init()
     {
-        SetPlayerState(PlayerState.canNotAct);
+        inGameManager = InGameManager.instance;
+        cardManager = CardManager.instance;
+    }
+
+    private void OnAllCardsSelected()
+    {
+        inGameManager.StateMachine.ChangeState(GameState.JudgmentState);
+    }
+}
+
+public class JudgmentState : IState
+{
+    private InGameManager inGameManager;
+    private CardManager cardManager;
+
+    public void Enter()
+    {
+        Init();
+        inGameManager.SetPlayerState(PlayerState.canNotAct);
+        inGameManager.StartCoroutine(CheakCardMatching_co());
+        Debug.Log("JudgmentState");
+    }
+
+    public void Update()
+    {
+
+    }
+
+    public void Exit()
+    {
+
+    }
+
+    private void Init()
+    {
+        inGameManager = InGameManager.instance;
+        cardManager = CardManager.instance;
     }
 
     private IEnumerator CheakCardMatching_co()
     {
         yield return YieldCache.WaitForSeconds(0.5f);
-        Card[] _cards = new Card[2];
-        _cards[0] = selectedCards.Pop();
-        _cards[1] = selectedCards.Pop();
-        if (_cards[0].CardType == _cards[1].CardType)
+        Debug.Log(cardManager.SelectedCards.Length);
+        if (cardManager.SelectedCards[0].CardType == cardManager.SelectedCards[1].CardType)
         {
-            foreach (Card card in _cards)
-            {
-                card.Flip(CardDirection.Front);
-                card.SetCanInteraction(false);
-            }
-            AddScore(100);
+            cardManager.SucceededFlip();
+            inGameManager.AddScore(100);
         }
         else
         {
-            foreach (Card card in _cards)
-            {
-                card.Flip(CardDirection.Back);
-                card.SetCanInteraction(true);
-            }
+            cardManager.FailedFlip();
         }
         yield return YieldCache.WaitForSeconds(0.5f);
+        EndJudgmentState();
     }
 
-    #region Methods
-
-    public void SelectCard(Card card)
+    private void EndJudgmentState()
     {
-        selectedCards.Push(card);
-        card.SetCanInteraction(false);
-        if (selectedCards.Count >= 2)
-        {
-            EndCardSelect();
-        }
+        inGameManager.StateMachine.ChangeState(GameState.SelectCardState);
+    }
+}
+
+public class EndState : IState
+{
+    public void Enter()
+    {
+        Debug.Log("EndState");
     }
 
-    private Card CreateCard(CardType cardType)
+    public void Update()
     {
-        Card card = Instantiate(cardPrefab);
-        card.SetCard(cardType);
-        flipAll += card.Flip;
-        return card;
+
     }
 
-    private void ShuffleCards()
+    public void Exit()
     {
-        cards = cards.GetShuffledList();
-    }
 
-    private void FlipAllCards(CardDirection cardDirection)
-    {
-        flipAll?.Invoke(cardDirection);
     }
-
-    private void PositionCards(Card[] cards)
-    {
-        Vector3 centerPoint = new Vector3(-((StageSize.x - 1) * CardIntervalX * 0.5f), -((StageSize.y - 1) * CardIntervalY * 0.5f), 0);
-        cardsMixedPos = centerPoint + new Vector3(-CardIntervalX, (StageSize.y - 1) * CardIntervalY, 0);
-        int count = 0;
-        for (int y = 0; y < StageSize.y; y++)
-        {
-            for (int x = 0; x < StageSize.x; x++)
-            {
-                Vector3 cardPos = centerPoint + new Vector3(x * CardIntervalX, y * CardIntervalY, 0);
-                cards[count].SetPosition(cardPos);
-                count++;
-            }
-        }
-    }
-
-    private void MoveAllCards(Vector3 targetPos, float time = 0.5f)
-    {
-        Debug.Log("MoveAllCards");
-        foreach (Card card in cards)
-        {
-            card.MoveTo(targetPos, time);
-        }
-    }
-    #endregion
 }
