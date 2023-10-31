@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public enum UIType
 {
@@ -9,11 +10,11 @@ public enum UIType
     Score,
 }
 
-public class InGameUIs : MonoBehaviour
+public class InGameUIs : MonoSington<InGameUIs>
 {
     [Header("UI Components")]
-    [SerializeField] private Text timer_T;
-    [SerializeField] private Text score_T;
+    [SerializeField] private TMP_Text timer_T;
+    [SerializeField] private TMP_Text score_T;
 
     public void UpdateUI(UIType uiType, object value)
     {
@@ -33,7 +34,7 @@ public class InGameUIs : MonoBehaviour
 
     private void UpdateTimerUI(float value)
     {
-        timer_T.text = $"LeftTime : {value}";
+        timer_T.text = $"{Mathf.Round(value * 10) * 0.1f}s";
     }
 
     private void UpdateScoreUI(int value)

@@ -125,6 +125,7 @@ public class Card : MonoBehaviour
 
     public void Flip(CardDirection direction)
     {
+        SoundManager.instance.Play(AudioClipName.Card);
         cardDirection = direction;
         animator.SetBool("IsFrontSide", direction == CardDirection.Front ? true : false);
     }
@@ -145,5 +146,6 @@ public class Card : MonoBehaviour
             yield return null;
         }
         transform.position = pos;
+        SoundManager.instance.Play(AudioClipName.Card);
     }
 }

@@ -44,8 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8cff899d11e8a04ba0d329e96f2fc9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  successCount: 0
+  difficultyDataContainer: {fileID: 11400000, guid: 4e744e66c70069a409edc6b446057163, type: 2}
   stageSize: {x: 3, y: 4}
   cardIntervalX: 1.3
   cardIntervalY: 1.7
-  score: 0
-  timer: 0

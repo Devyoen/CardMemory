@@ -13,10 +13,9 @@ public class CardManager : MonoSington<CardManager>
     public CardImageContainer CardImageContainer => cardImageContainer;
 
     [Header("Common")]
-    private Card[] cards;
+    private Card[] cards = new Card[0];
     [SerializeField] private Card[] selectedCards = new Card[2];
     private List<CardType> curCardsType = new List<CardType>();
-    private InGameManager inGameManager;
 
     public Card[] Cards => cards;
     public Card[] SelectedCards => selectedCards;
@@ -26,12 +25,26 @@ public class CardManager : MonoSington<CardManager>
     public Action onAllSelected;
     #endregion
 
-    private void Start()
+    #region Methods
+    public void Init()
     {
-        inGameManager = InGameManager.instance;
+        RemoveCards();
+        flipAll = null;
+        InGameManager.instance.InitSuccessCount();
     }
 
-    #region Methods
+    private void RemoveCards()
+    {
+        if (cards.Length > 0)
+        {
+            foreach (Card card in cards)
+            {
+                Destroy(card.gameObject);
+            }
+        }
+        cards = new Card[0];
+    }
+
     public void SelectCard(Card card)
     {
         card.SetCanInteraction(false);
@@ -54,7 +67,8 @@ public class CardManager : MonoSington<CardManager>
     {
         foreach (Card card in selectedCards)
         {
-            card.Flip(CardDirection.Front);
+            //card.Flip(CardDirection.Front);
+            SoundManager.instance.Play(AudioClipName.Success);
             card.SetCanInteraction(false);
             Debug.Log("Succed");
         }
@@ -88,7 +102,7 @@ public class CardManager : MonoSington<CardManager>
         flipAll?.Invoke(cardDirection);
     }
 
-    public void MoveAllCards(Vector3 targetPos, float time = 0.5f)
+    public void MoveAllCards(Vector3 targetPos, float time = 0.3f)
     {
         foreach (Card card in cards)
         {
@@ -101,9 +115,14 @@ public class CardManager : MonoSington<CardManager>
         cards = cards.GetShuffledList();
     }
 
+    public void ShuffleCards_Replay(Card[] _cards)
+    {
+        cards = _cards;
+    }
+
     public void SetCards()
     {
-        int cardCount = inGameManager.StageSize.x * inGameManager.StageSize.y;
+        int cardCount = InGameManager.instance.StageSize.x * InGameManager.instance.StageSize.y;
         cards = new Card[cardCount];
         curCardsType = CardType.GetRandomCardTypeList(cardCount); //생성할 카드들의 타입을 랜덤하게 정함
         for (int i = 0; i < cardCount; i++)
@@ -113,16 +132,28 @@ public class CardManager : MonoSington<CardManager>
         PositionCards();
     }
 
+    public void SetCards_Replay(List<CardType> cardTypes)
+    {
+        int cardCount = InGameManager.instance.StageSize.x * InGameManager.instance.StageSize.y;
+        cards = new Card[cardCount];
+        curCardsType = cardTypes;
+        for (int i = 0; i < cardCount; i++)
+        {
+            cards[i] = CreateCard(curCardsType[i]);
+        }
+        PositionCards();
+    }
+
     public void PositionCards()
     {
-        Vector3 centerPoint = new Vector3(-((inGameManager.StageSize.x - 1) * inGameManager.CardIntervalX * 0.5f), -((inGameManager.StageSize.y - 1) * inGameManager.CardIntervalY * 0.5f), 0);
-        Vector3 tempPos = centerPoint + new Vector3(-inGameManager.CardIntervalX, (inGameManager.StageSize.y - 1) * inGameManager.CardIntervalY, 0);
+        Vector3 centerPoint = new Vector3(-((InGameManager.instance.StageSize.x - 1) * InGameManager.instance.CardIntervalX * 0.5f), -((InGameManager.instance.StageSize.y - 1) * InGameManager.instance.CardIntervalY * 0.5f), 0);
+        Vector3 tempPos = centerPoint + new Vector3(-InGameManager.instance.CardIntervalX, (InGameManager.instance.StageSize.y - 1) * InGameManager.instance.CardIntervalY, 0);
         int count = 0;
-        for (int y = 0; y < inGameManager.StageSize.y; y++)
+        for (int y = 0; y < InGameManager.instance.StageSize.y; y++)
         {
-            for (int x = 0; x < inGameManager.StageSize.x; x++)
+            for (int x = 0; x < InGameManager.instance.StageSize.x; x++)
             {
-                Vector3 cardPos = centerPoint + new Vector3(x * inGameManager.CardIntervalX, y * inGameManager.CardIntervalY, 0);
+                Vector3 cardPos = centerPoint + new Vector3(x * InGameManager.instance.CardIntervalX, y * InGameManager.instance.CardIntervalY, 0);
                 cards[count].SetPosition(cardPos);
                 count++;
             }
@@ -134,7 +165,7 @@ public class CardManager : MonoSington<CardManager>
         foreach (Card card in cards)
         {
             card.MoveTo(card.OriginPos);
-            yield return YieldCache.WaitForSeconds(0.3f);
+            yield return YieldCache.WaitForSeconds(0.15f);
         }
     }
     #endregion
